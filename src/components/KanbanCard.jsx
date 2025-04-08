@@ -10,7 +10,7 @@ export default function KanbanCard({ item }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white rounded-xl shadow-sm overflow-hidden relative w-[400px] h-[600px]"
+      className="bg-white rounded-xl shadow-sm overflow-hidden relative w-[400px] h-[600px] border-2 border-gray-300 print:shadow-none print:border-[1px]"
     >
       <div 
         className="absolute left-0 top-0 bottom-0 w-3"
@@ -18,7 +18,7 @@ export default function KanbanCard({ item }) {
       />
       <div className="p-6 h-full flex flex-col">
         {/* Product Name and Part Number */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h3 className="text-2xl font-bold text-gray-900 mb-1">
             {item.productName}
           </h3>
@@ -28,7 +28,7 @@ export default function KanbanCard({ item }) {
         </div>
 
         {/* Description */}
-        <div className="mb-8">
+        <div className="mb-6">
           <p className="text-gray-700 text-lg">
             {item.description}
           </p>
@@ -36,47 +36,43 @@ export default function KanbanCard({ item }) {
 
         {/* Reorder Info */}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-gray-600">Reorder Point</div>
+          <div className="bg-gray-50 rounded-lg p-3 text-center">
+            <div className="text-gray-600 mb-1">Reorder Point</div>
             <div className="text-2xl font-bold text-amber-700">
               {item.reorderPoint}
             </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-gray-600">Reorder QTY</div>
+          <div className="bg-gray-50 rounded-lg p-3 text-center">
+            <div className="text-gray-600 mb-1">Reorder QTY</div>
             <div className="text-2xl font-bold text-blue-600">
               {item.reorderQty}
             </div>
           </div>
         </div>
 
-        {/* Location and Unit Cost */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-gray-600">Location</div>
-            <div className="text-lg">
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
+          <div className="bg-gray-50 rounded-lg p-2">
+            <div className="text-gray-600 text-sm">Location</div>
+            <div className="text-base">
               {item.location}
             </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-gray-600">Unit Cost</div>
-            <div className="text-lg">
+          <div className="bg-gray-50 rounded-lg p-2">
+            <div className="text-gray-600 text-sm">Unit Cost</div>
+            <div className="text-base">
               ${item.unitCost.toFixed(2)}
             </div>
           </div>
-        </div>
-
-        {/* Category and Supplier */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-gray-600">Category</div>
-            <div className="text-lg">
+          <div className="bg-gray-50 rounded-lg p-2">
+            <div className="text-gray-600 text-sm">Category</div>
+            <div className="text-base">
               {item.category}
             </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-gray-600">Supplier</div>
-            <div className="text-lg">
+          <div className="bg-gray-50 rounded-lg p-2">
+            <div className="text-gray-600 text-sm">Supplier</div>
+            <div className="text-base">
               {item.supplier}
             </div>
           </div>
@@ -84,21 +80,21 @@ export default function KanbanCard({ item }) {
 
         {/* QR Code and Product Image */}
         <div className="grid grid-cols-2 gap-4 mt-auto">
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="bg-white rounded-lg p-3 border border-gray-200">
             <img 
               src={item.qrCode} 
               alt="QR Code"
-              className="w-full aspect-square object-contain mb-2"
+              className="w-full h-[120px] object-contain mb-1"
             />
             <div className="text-center text-sm text-gray-600">
               Scan to Order
             </div>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="bg-white rounded-lg p-3 border border-gray-200">
             <img 
               src={item.imageUrl} 
               alt={item.productName}
-              className="w-full aspect-square object-contain"
+              className="w-full h-[120px] object-contain"
             />
           </div>
         </div>

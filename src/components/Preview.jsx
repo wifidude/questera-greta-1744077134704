@@ -17,6 +17,79 @@ export default function Preview({ items }) {
     setSelectedItems(newSelected);
   };
 
+  const handlePrint = () => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    
+    // Generate print content
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Kanban Cards</title>
+          <style>
+            @media print {
+              @page {
+                size: auto;
+                margin: 0.5cm;
+              }
+              
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              
+              .page-break {
+                page-break-after: always;
+              }
+              
+              .print-grid {
+                display: grid;
+                grid-gap: 20px;
+                padding: 20px;
+              }
+              
+              .no-print {
+                display: none !important;
+              }
+            }
+            
+            .print-container {
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+            }
+          </style>
+          <link href="${window.location.origin}/src/index.css" rel="stylesheet" />
+        </head>
+        <body>
+          <div class="print-container">
+            ${Array.from(selectedItems).map(index => {
+              const item = items[index];
+              return `
+                <div class="page-break">
+                  ${document.querySelector(`[data-item-index="${index}"] .kanban-card`).outerHTML}
+                </div>
+                ${Array.from({ length: binLabelsCount }).map(() => `
+                  <div class="page-break">
+                    ${document.querySelector(`[data-item-index="${index}"] .bin-label`).outerHTML}
+                  </div>
+                `).join('')}
+              `;
+            }).join('')}
+          </div>
+          <script>
+            window.onload = () => window.print();
+          </script>
+        </body>
+      </html>
+    `;
+    
+    // Write content to print window
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -42,8 +115,11 @@ export default function Preview({ items }) {
               />
             </label>
             <button
-              onClick={() => {/* Implement print logic */}}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={handlePrint}
+              disabled={selectedItems.size === 0}
+              className={`px-4 py-2 bg-blue-600 text-white rounded-lg transition-colors ${
+                selectedItems.size === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+              }`}
             >
               Print Selected
             </button>
@@ -52,8 +128,8 @@ export default function Preview({ items }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item, index) => (
-            <div key={index} className="space-y-4">
-              <label className="flex items-center space-x-2">
+            <div key={index} data-item-index={index} className="space-y-4">
+              <label className="flex items-center space-x-2 no-print">
                 <input
                   type="checkbox"
                   checked={selectedItems.has(index)}
@@ -62,9 +138,13 @@ export default function Preview({ items }) {
                 />
                 <span>Select for printing</span>
               </label>
-              <KanbanCard item={item} />
+              <div className="kanban-card">
+                <KanbanCard item={item} />
+              </div>
               {Array.from({ length: binLabelsCount }).map((_, i) => (
-                <BinLabel key={i} item={item} />
+                <div key={i} className="bin-label">
+                  <BinLabel item={item} />
+                </div>
               ))}
             </div>
           ))}

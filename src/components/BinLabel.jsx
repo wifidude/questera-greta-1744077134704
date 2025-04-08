@@ -9,7 +9,7 @@ export default function BinLabel({ item }) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white rounded-lg shadow-sm overflow-hidden flex w-[300px] h-[100px]"
+      className="bg-white rounded-lg shadow-sm overflow-hidden flex w-[300px] h-[100px] border-2 border-gray-300 print:shadow-none print:border-[1px]"
     >
       <div 
         className="w-2 flex-shrink-0"
@@ -22,6 +22,9 @@ export default function BinLabel({ item }) {
           </h4>
           <p className="text-xs text-gray-600 mt-1">
             {item.partNumber}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {item.location}
           </p>
         </div>
         <div className="w-[80px] aspect-square ml-3">
