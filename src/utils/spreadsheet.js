@@ -2,106 +2,46 @@ import * as XLSX from 'xlsx';
 import QRCode from 'qrcode';
 import { CATEGORIES } from '../constants/categories';
 
-const EXPECTED_COLUMNS = {
-  'Product Name': 'A',
-  'Part Number': 'B',
-  'Description': 'C',
-  'Location': 'D',
-  'Category': 'E',
-  'Reorder Point': 'F',
-  'Reorder QTY': 'G',
-  'Unit Cost': 'H',
-  'Supplier': 'I',
-  'Order Link': 'J',
-  'Product Image URL': 'K'
+// Add location colors mapping
+export const LOCATION_COLORS = {
+  'A': '#f0f9ff', // Light blue
+  'B': '#fef2f2', // Light red
+  'C': '#f0fdf4', // Light green
+  'D': '#faf5ff', // Light purple
+  'E': '#fff7ed', // Light orange
+  'F': '#f8fafc', // Light gray
+  'G': '#fdf2f8', // Light pink
+  'H': '#fffbeb', // Light yellow
 };
 
-export async function processSpreadsheet(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = async (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-        
-        // Get headers and validate
-        const headers = jsonData[0];
-        const columnMapping = validateAndMapColumns(headers);
-        
-        // Process rows
-        const processedItems = [];
-        for (let i = 1; i < jsonData.length; i++) {
-          const row = jsonData[i];
-          if (!row.length) continue; // Skip empty rows
-          
-          const item = mapRowToItem(row, columnMapping);
-          
-          // Process category
-          if (!CATEGORIES[item.category]) {
-            console.warn(`Unknown category: ${item.category}`);
-            item.category = 'Other';
-          }
-          
-          // Generate QR code
-          try {
-            item.qrCode = await generateQRCode(item.orderLink);
-          } catch (error) {
-            console.warn(`Failed to generate QR code for ${item.productName}:`, error);
-            item.qrCode = await generateQRCode('https://example.com');
-          }
-          
-          // Process image
-          try {
-            item.imageUrl = await processImage(item.imageUrl);
-          } catch (error) {
-            console.warn(`Failed to process image for ${item.productName}:`, error);
-            item.imageUrl = 'https://via.placeholder.com/150';
-          }
-          
-          processedItems.push(item);
-        }
-        
-        resolve(processedItems);
-      } catch (error) {
-        reject(new Error('Failed to process spreadsheet: ' + error.message));
-      }
-    };
-    
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsArrayBuffer(file);
-  });
+// Utility functions for data type conversion
+function getString(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
 }
 
-function validateAndMapColumns(headers) {
-  const mapping = {};
-  const foundColumns = new Set();
-  
-  headers.forEach((header, index) => {
-    const normalizedHeader = header.trim();
-    const expectedColumn = Object.entries(EXPECTED_COLUMNS).find(([name]) => 
-      normalizedHeader.toLowerCase() === name.toLowerCase()
-    );
-    
-    if (expectedColumn) {
-      mapping[expectedColumn[0]] = index;
-      foundColumns.add(expectedColumn[0]);
-    }
-  });
-  
-  // Check for missing required columns
-  const requiredColumns = ['Product Name', 'Part Number', 'Category'];
-  const missingRequired = requiredColumns.filter(col => !foundColumns.has(col));
-  
-  if (missingRequired.length > 0) {
-    throw new Error(`Missing required columns: ${missingRequired.join(', ')}`);
-  }
-  
-  return mapping;
+function getNumber(value) {
+  if (value === null || value === undefined) return 0;
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
 }
 
+// Required columns for the spreadsheet
+const REQUIRED_COLUMNS = [
+  'Product Name',
+  'Part Number',
+  'Description',
+  'Location',
+  'Category',
+  'Reorder Point',
+  'Reorder QTY',
+  'Unit Cost',
+  'Supplier',
+  'Order Link',
+  'Product Image URL'
+];
+
+// Map spreadsheet row to item object
 function mapRowToItem(row, columnMapping) {
   return {
     productName: getString(row[columnMapping['Product Name']]),
@@ -109,7 +49,7 @@ function mapRowToItem(row, columnMapping) {
     description: getString(row[columnMapping['Description']]),
     location: getString(row[columnMapping['Location']]),
     category: getString(row[columnMapping['Category']]),
-    reorderPoint: getNumber(row[columnMapping['Reorder Point']]),
+    reorderPoint: getString(row[columnMapping['Reorder Point']]),
     reorderQty: getNumber(row[columnMapping['Reorder QTY']]),
     unitCost: getNumber(row[columnMapping['Unit Cost']]),
     supplier: getString(row[columnMapping['Supplier']]),
@@ -118,18 +58,27 @@ function mapRowToItem(row, columnMapping) {
   };
 }
 
-function getString(value) {
-  return value ? String(value).trim() : '';
+// Validate the spreadsheet structure
+function validateSpreadsheet(worksheet) {
+  const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
+  const missingColumns = REQUIRED_COLUMNS.filter(col => !headers.includes(col));
+  
+  if (missingColumns.length > 0) {
+    throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+  }
+  
+  return headers.reduce((acc, header, index) => {
+    if (REQUIRED_COLUMNS.includes(header)) {
+      acc[header] = index;
+    }
+    return acc;
+  }, {});
 }
 
-function getNumber(value) {
-  const num = Number(value);
-  return isNaN(num) ? 0 : num;
-}
-
+// Generate QR code for an item
 async function generateQRCode(url) {
   try {
-    return await QRCode.toDataURL(url || 'https://example.com', {
+    return await QRCode.toDataURL(url, {
       width: 200,
       margin: 1,
       color: {
@@ -139,28 +88,54 @@ async function generateQRCode(url) {
     });
   } catch (error) {
     console.error('QR Code generation failed:', error);
-    return await QRCode.toDataURL('https://example.com');
+    return '';
   }
 }
 
-async function processImage(url) {
-  if (!url) return 'https://via.placeholder.com/150';
-  
-  try {
-    // Validate URL
-    new URL(url);
+// Process the spreadsheet file
+export async function processSpreadsheet(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
     
-    // Create a temp image to check loading
-    const img = new Image();
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-      img.src = url;
-    });
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        // Validate spreadsheet structure
+        const columnMapping = validateSpreadsheet(worksheet);
+        
+        // Convert worksheet to JSON
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }).slice(1);
+        
+        // Process each row
+        const items = await Promise.all(rows.map(async (row) => {
+          const item = mapRowToItem(row, columnMapping);
+          
+          // Generate QR code if order link exists
+          if (item.orderLink) {
+            item.qrCode = await generateQRCode(item.orderLink);
+          }
+          
+          // Validate category
+          if (!CATEGORIES[item.category]) {
+            console.warn(`Unknown category: ${item.category}`);
+          }
+          
+          return item;
+        }));
+        
+        resolve(items);
+      } catch (error) {
+        reject(new Error(`Failed to process spreadsheet: ${error.message}`));
+      }
+    };
     
-    return url;
-  } catch (error) {
-    console.warn('Invalid image URL:', url);
-    return 'https://via.placeholder.com/150';
-  }
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+    
+    reader.readAsArrayBuffer(file);
+  });
 }

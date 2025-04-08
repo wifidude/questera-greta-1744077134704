@@ -1,11 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { CATEGORIES } from '../constants/categories';
+import { LOCATION_COLORS } from '../utils/spreadsheet';
 
 export default function KanbanCard({ item }) {
   const categoryColor = CATEGORIES[item.category] || '#ffffff';
   const revDate = new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
   
+  // Get location color based on first letter
+  const locationFirstLetter = item.location?.charAt(0)?.toUpperCase() || 'A';
+  const locationColor = LOCATION_COLORS[locationFirstLetter] || '#f8fafc';
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -52,7 +57,10 @@ export default function KanbanCard({ item }) {
 
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
-          <div className="bg-gray-50 rounded-lg p-2">
+          <div 
+            className="rounded-lg p-2"
+            style={{ backgroundColor: locationColor }}
+          >
             <div className="text-gray-600 text-sm">Location</div>
             <div className="text-base">
               {item.location}
